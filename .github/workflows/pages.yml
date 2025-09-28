@@ -1,0 +1,65 @@
+name: Build and Deploy Blog to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+# Required permissions for GitHub Pages deployment
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build site
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+          # Uses version from Gemfile via .ruby-version if present; otherwise latest 3.x
+
+      - name: Install pygments for syntax highlighting (pygments.rb)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pygments
+
+      - name: Install dependencies
+        run: bundle install --retry 3
+
+      - name: Build static site
+        run: bundle exec ruby scripts/build.rb
+
+      - name: Add CNAME (optional)
+        if: ${{ vars.CUSTOM_DOMAIN != '' }}
+        env:
+          CUSTOM_DOMAIN: ${{ vars.CUSTOM_DOMAIN }}
+        run: |
+          echo "$CUSTOM_DOMAIN" > build/CNAME
+
+      - name: Upload build artifacts for Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
