@@ -1,0 +1,14 @@
+= Hello World
+:revdate: 2025-09-28
+:toc:
+Lorem ipsum
+
+Lorem ipsum
+[source,kotlin]
+----
+fun main() {
+    val kotlin = "Kotlin"
+    println("Testing $kotlin highlighting")
+}
+----
+
