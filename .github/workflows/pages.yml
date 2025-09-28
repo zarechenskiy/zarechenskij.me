@@ -40,13 +40,6 @@ jobs:
       - name: Build static site
         run: bundle exec ruby scripts/build.rb
 
-      - name: Add CNAME (optional)
-        if: ${{ vars.CUSTOM_DOMAIN != '' }}
-        env:
-          CUSTOM_DOMAIN: ${{ vars.CUSTOM_DOMAIN }}
-        run: |
-          echo "$CUSTOM_DOMAIN" > build/CNAME
-
       - name: Upload build artifacts for Pages
         uses: actions/upload-pages-artifact@v3
         with:
