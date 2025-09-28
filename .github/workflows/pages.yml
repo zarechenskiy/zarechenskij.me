@@ -27,7 +27,7 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           bundler-cache: true
-          # Uses version from Gemfile via .ruby-version if present; otherwise latest 3.x
+          ruby-version: '3.4'
 
       - name: Install pygments for syntax highlighting (pygments.rb)
         run: |
