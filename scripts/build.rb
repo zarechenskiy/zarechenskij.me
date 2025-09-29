@@ -42,6 +42,7 @@ adoc_files.each do |src|
       'sectanchors' => '',
       'source-highlighter' => 'pygments',
       'stylesheet' => '', # use default built-in styles
+      'docinfo' => 'shared', # inject content/docinfo.html
     }
   )
 

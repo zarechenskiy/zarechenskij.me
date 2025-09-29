@@ -43,7 +43,7 @@ val (title, text) = speaker // IDE warning -> compiler warning (2.X) -> error (2
 
 === Positional
 
-[source]
+[source,kotlin]
 ----
 val [x, y, z] = listOfInts // OK
 val [f, s] = pair // OK
