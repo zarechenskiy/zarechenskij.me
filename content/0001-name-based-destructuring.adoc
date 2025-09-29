@@ -1,0 +1,56 @@
+= Name-based destructuring in Kotlin
+:revdate: 2025-09-29
+
+This post was originally written for Reddit (https://www.reddit.com/r/Kotlin/comments/1lzoifo/namebased_destructuring_in_kotlin/[link]). Since then, I’ve decided that I’d like to post more frequently and not only about Kotlin. So now I’m reposting it here for the sake of completeness and to see how everything works.
+
+:toc:
+
+== The current state
+
+Today Kotlin only supports positional destructuring with the well-known syntax: `val (x, y) = expr`.
+
+And that’s it. This approach has a few https://github.com/Kotlin/KEEP/blob/main/proposals/KEEP-0438-name-based-destructuring.md#general-problems[drawbacks], where the main one is that positional destructuring doesn't know anything about the names of the destructured properties. As a result, `val (x, y) = ...` and `val (y, x) = ...` have different semantics, and it's not clear if that's a problem without looking at the declaration of the `data` class.
+
+We could’ve even forgotten about the issues with positional destructuring, but we want Kotlin to evolve. For instance, we know we get value classes and a way to destructure their properties. Reusing positional destructuring with its drawbacks seems unacceptable for us. The same goes for potential evolution with regard to pattern-matching capabilities: first, we have to get a solid solution for destructuring and then expand it for more cases like `p is Person(val name, val lastName) // p -> Person, + name, lastName`.
+
+== Is positional destructuring that bad?
+
+Oh, not at all. In an ideal world, both positional and name-based destructuring are present and coexist in Kotlin. Positional destructuring is used mostly for homogeneous generic collections like lists, where destructuring relies on element position: `componentN` functions essentially delegate to `get(N-1)` or to names like `first`, `second`, and so on (`Pair`, `Triple` examples).
+
+However, in the vast majority of cases for `data` or `value` classes, we see that such classes are named rather than positional, so name-based destructuring should be the default.
+
+== Syntax?
+
+The end goal is to turn the existing syntax `val (x, y) = ...` to name-based destructuring through a long migration period, and to introduce a new syntax for positional destructuring: `val [x, y] = ...` as positional destructuring still has many important cases. We also plan to introduce full forms for both positional and name-based destructuring.
+
+=== Name-based
+
+[source,kotlin]
+----
+data class Notification(val message: String, val title: String)
+
+// Name-based destructuring, future syntax
+
+(val message, val title) = speaker // OK, full form
+(val title, val message) = speaker // OK, full form
+
+(val text, val message) = speaker // Compiler error, no text property!
+(val text = message, val title) = speaker // OK
+
+val (message, title) = speaker // OK, short form
+val (title, text) = speaker // IDE warning -> compiler warning (2.X) -> error (2.Y)
+----
+
+=== Positional
+
+[source]
+----
+val [x, y, z] = listOfInts // OK
+val [f, s] = pair // OK
+val [first, second] = pair // OK
+----
+
+== Full proposal
+
+See the full proposal https://github.com/Kotlin/KEEP/blob/main/proposals/KEEP-0438-name-based-destructuring.md[here] and share your thoughts!
+
