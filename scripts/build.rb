@@ -132,7 +132,7 @@ index_html = <<~HTML
   <body>
     <div class="container">
       <header>
-        <h1>zarechenskij.me</h1>
+        <h1>curiouslab.dev</h1>
         <div class="tagline">Thoughts on Kotlin, language design, and more</div>
       </header>
       <div class="grid">
