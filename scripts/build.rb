@@ -94,7 +94,7 @@ index_html = <<~HTML
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>zarechenskij.me</title>
+    <title>curiouslab.dev</title>
     <style>
       :root {
         --bg: #0b0e14;
