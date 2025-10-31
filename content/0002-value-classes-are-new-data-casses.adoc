@@ -1,5 +1,5 @@
 = Value classes are new data classes
-:revdate: 2025-09-29
+:revdate: 2025-10-31
 
 Recently the Valhalla team published an early-access JDK build that implements the first part of the value classes story. More details and instructions on how to try it https://inside.java/2025/10/27/try-jep-401-value-classes/[here]. While it needs time to mature, this is great news for the JVM ecosystem! It’s also a good opportunity to look at Kotlin’s own plans for value classes, (im)mutability and how it's all related to `data` classes.
 
