@@ -103,7 +103,7 @@ Alright. So far, we’ve mostly talked about the semantics of value classes: how
 
 But what about runtime performance?
 
-When it comes to Kotlin/JVM, it's up to the JVM. Value classes in Kotlin are designed so that the JVM can optimize them, but their primary goal is semantics: we don’t design them specifically for performance. Thanks to Project Valhalla, we can use the same type descriptors on the JVM and get scalarization and heap flattening automatically.
+When it comes to Kotlin/JVM, it's up to the JVM. Value classes in Kotlin are designed so that the JVM can optimize them, but their primary goal is semantics: we don’t design them specifically for performance. Thanks to Project Valhalla, we can use the same type descriptors on the JVM and get scalarization and heap flattening automatically. Moreover, `inline` functions will allow us to write even generic code that works with value classes and benefit from scalarization optimizations!
 
 At the same time, this means Kotlin isn’t tied to Valhalla or even the JVM. We can and we will ship value classes independently of what happens in Java or the JVM. In practice, this means that if you target a JVM without value class support but use a modern Kotlin version, you can still take advantage of value classes and their language-level semantics. Additionally, if you target a modern JVM that supports value classes, you’ll also gain runtime performance improvements.
 
