@@ -7,14 +7,23 @@ Recently the Valhalla team published an early-access JDK build that implements t
 
 == Data classes, records, case classes? Product types!
 
-Starting from "early" days of programming in high-level programming languages.
+Starting from the "early" days of high-level programming languages, there have been many similar concepts:
+records (introduced in ALGOL and Pascal), structs, named tuples, case classes, data classes in Kotlin and so on.
+All of them serve the same fundamental purpose, whic is  to combine potentially heterogeneous pieces of data into a single unit. Depending on the specifics of the target platform, they may or may not come with additional semantics.
+But first and foremost, they exist to carry data.
+
+Theoretically, it’s all about so-called product types, because a combined type (whatever it is) can hold the Cartesian _product_ of its values: `|X| × |Y|`. And here are value classes, which, as the name suggests, also revolve around “values” and are product types as well. They are primarily designed to hold data, but their semantics differ quite a bit from existing constructs in Kotlin.
+
+Let’s unpack and see why it can be a great addition to the language.
 
 == Value classes. Building blocks.
+
+In short, we plan to introduce value classes to Kotlin. They somewhat reflect value classes in Java in that they don’t have identity (value classes after all), but they don’t exactly replicate the same design. Next, I’ll describe the building blocks and then the story of value class mutations, which quite stands out from Java’s perspective.
 
 === Destructuring
 
 Remember we were talking about https://curiouslab.dev/0001-name-based-destructuring.html[name-based destructuring]?
-We mentioned that existing data classes have the problem of reusing operator `component` functions, which is not ideal semantically and also increases the ABI surface. The good news is that value classes are a new kind of class, so we can avoid adding those component functions and adopt the name-based destructuring design from day one:
+We mentioned that existing data classes have the problem of reusing operator `component` functions, which is not ideal semantically and also increases the ABI surface. The good news is that value classes are a new kind of classes, so we can avoid adding those component functions and adopt the name-based destructuring design right away:
 [source,kotlin]
 ----
 value class Money(val amount: BigDecimal, val currency: String)
@@ -36,7 +45,18 @@ println(money) // prints "Money(amount=10.0, currency=USD)"
 
 === Value based type, shallow immutability
 
+Value classes don’t have identity, they are _entirely_ represented by their underlying data.
+As a result, the `===` (identity equality) operator doesn’t make sense for them.
+For the same reason, mutability also doesn’t apply to value classes. In Kotlin, this means that a value class can only have `val` properties:
+[source,kotlin]
+----
+value class Money(val amount: BigDecimal, val currency: String) // good!
+value class Book(val name: String, var author: Author) // error! "author" cannot be var
+----
 
+We call this shallow immutability: while the value class itself is immutable, the objects it holds might still be mutable (`Author` in the example can have vars, for instance). Deep immutability, where no part of an object can be mutated, is a topic for another post ;)
+
+This requirement of being identityless is what mostly distinguishes value classes from data classes and makes them unique in the language
 
 == (Im)mutability
 
@@ -81,13 +101,13 @@ This way, modifying value classes becomes just as easy as working with reference
 
 == Runtime performance and the Valhalla project
 
-Alright. So far, we’ve mostly talked about the semantics of value classes: how they get support of name-based destructuring and provide convenient equals, hashCode, and toString implementations, as well as language support for safe mutations through “copy vars.”
+Alright. So far, we’ve mostly talked about the semantics of value classes: how they get support of name-based destructuring and provide convenient equals, hashCode, and toString implementations, as well as language support for safe mutations through “copy vars”.
 
 But what about runtime performance?
 
-When it comes to Kotlin/JVM, it's up to the JVM. Value classes in Kotlin are designed so that the JVM can optimize them, but their primary goal is semantics: we don’t design them specifically for performance. Thanks to Project Valhalla, we can use the same type descriptors on the JVM and get those performance benefits automatically.
+When it comes to Kotlin/JVM, it's up to the JVM. Value classes in Kotlin are designed so that the JVM can optimize them, but their primary goal is semantics: we don’t design them specifically for performance. Thanks to Project Valhalla, we can use the same type descriptors on the JVM and get scalarization and heap flattening automatically.
 
-At the same time, this means Kotlin isn’t tied to Valhalla or even the JVM. We can and will ship value classes independently of what happens in Java or the JVM. In practice, this means that if you target a JVM without value class support but use a modern Kotlin version, you can still take advantage of value classes and their language-level semantics. However, if you target a modern JVM that supports value classes, you’ll also gain runtime performance improvements.
+At the same time, this means Kotlin isn’t tied to Valhalla or even the JVM. We can and we will ship value classes independently of what happens in Java or the JVM. In practice, this means that if you target a JVM without value class support but use a modern Kotlin version, you can still take advantage of value classes and their language-level semantics. However, if you target a modern JVM that supports value classes, you’ll also gain runtime performance improvements.
 
 That said, the runtime performance of value classes can be tricky. It depends on your value class size, integrity requirements, nullability, and heap flattening. So we’d love to put runtime performance on the shoulders of the JVM and keep it out of the language design itself.
 
