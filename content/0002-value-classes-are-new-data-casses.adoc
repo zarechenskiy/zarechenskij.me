@@ -60,8 +60,7 @@ This requirement of being identityless is what mostly distinguishes value classe
 
 == (Im)mutability. Copy vars
 
-So. Value classes are shallow immutable (can have only `val`s in terms of today's Kotlin). Without any additions,
-in order adjust a value of a value class, we need to call a constructor, invoke a copy function, use "wither" or do something else. Note that this operation is _safe_ as we simply made a new copy and cannot affect the current state of a program.
+So. Value classes are shallow immutable (can have only `val`s in terms of today's Kotlin). In order to adjust the value of a value class, we need to call a constructor, invoke a copy function, use a wither, or do something similar. Note that this operation is _safe_ as we simply make a new copy and cannot affect the current state of a program.
 
 On the other hand, mutation of a reference, can be done by using just `=` operator and can be _destructive_ as it actually changes the state. Compare:
 [source,kotlin]
@@ -79,7 +78,7 @@ valPostcode = ValuePostcode(valPostcode.code.uppercase())
 refPostcode.code = refPostcode.code.uppercase()
 ----
 
-And here’s the trick. Good system design teaches us that abstractions should make it easy to do "the right thing" and discourage "the wrong thing". However, with plain value classes, adjusting values has actually become easier when using references, even though that can lead to problems!
+And here’s the trick. Good system design teaches us that abstractions should make it easy to do "the right thing" and discourage "the wrong thing". However, with plain value classes, adjusting values has actually become easier when using _references_, even though that can lead to problems!
 
 Consciously, we may understand that value classes are preferable in certain scenarios when we want safe “mutations”. But in practice, if working with references is simply easier, that’s the path many will take. And that's solely because the abstractions are designed this way. That's why we want to try the route of "copy vars" that
 will allow us to get convenience of reference mutations and safety of value classes:
