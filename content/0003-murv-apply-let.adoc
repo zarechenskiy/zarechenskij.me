@@ -1,4 +1,4 @@
-= Must-use return values: pure functions, `apply` and `let` case
+= Must-Use Return Values: pure functions, `apply` and `let` case
 :revdate: 2026-07-20
 
 It's time to resurrect the blog! I already have a list of half-finished posts (on collection literals, context-sensitive resolution, and properties vs. fields), so stay tuned!
