@@ -1,0 +1,137 @@
+= Must-use return values: pure functions, `apply` and `let` case
+:revdate: 2026-07-20
+
+It's time to resurrect the blog! I already have a list of half-finished posts (on collection literals, context-sensitive resolution, and properties vs. fields), so stay tuned!
+
+This time, a colleague of mine shared this https://proandroiddev.com/11-approvals-green-tests-and-a-broken-prod-how-one-kotlin-keyword-blinded-our-ui-automation-34e2b1a3216c[post], where a subtle bug was caused by using `apply` instead of `let`. Interestingly, our unused return value checker can help with that, and this is the story behind it, with a few deep dives into how it actually works!
+
+:toc:
+
+== State of the Must-Use Return Values (MURV) feature
+
+The plan is to enable the feature in Kotlin *2.5* in `check` mode. This means that calls to library functions that have been annotated (i.e., compiled in `full` mode) will produce warnings if their return values are not used. These libraries include the Kotlin standard library, the kotlinx libraries and a handful of others, including the Spring Framework:
+[source,kotlin]
+----
+// Kotlin 2.5
+
+fun process(postalCodes: List<String>) {
+    postalCodes.map { it.uppercase() } // Warning: Unused return value of 'map'
+}
+----
+
+Which is great as it can save us from certain bugs, like the one above, where the expression is simply lost. You can read more about the feature here: https://github.com/Kotlin/KEEP/blob/main/proposals/KEEP-0412-unused-return-value-checker.md[KEEP-0412].
+
+=== MURV and pure functions
+
+I like to think about this feature as a _pragmatic_ separation between functions with and without side-effects.
+
+We know for sure that if the result of a _pure_ function is computed and then ignored, that's almost certainly a bug. In practice, however, explicitly classifying functions as "pure" or "impure" is often non-practical: the boundary is debatable and maintaining such functions often results in inconvenient API.
+
+Instead, it often makes more sense to talk about functions whose return type can be ignored or not.
+
+A function annotated with MURV is one whose return value is expected to be consumed. Such a function may still have side effects (it's fine), but its primary purpose is to produce a useful result. Ignoring that result is therefore likely a mistake. This is our "pure" functions (kind of). For example:
+
+- As we talked, these are functions that are "pure": `map`, `flatMap`, `filter` and so on.
+- An example with side-effect is `Iterator.next(): T`: the function modifies the internal state, but its primary purpose is to get the next element, so the result shouldn't be ignored.
+
+On the other hand, an ignorable function is one whose primary purpose is to perform a side effect. Such functions can
+return values but these are often supplementary. For example:
+
+- Functions that "return" `Unit` obviously fall into this category. It's functions like `println("Kotlin")`
+- However, also functions like `MutableList.add(element): Boolean`: its primary purpose is to modify the list and return value is a supplementary thing.
+
+==== MURV and higher-order functions
+
+And, of course, in a language with higher-order functions, there's another aspect. Besides functions that are ignorable and not, there is effectively a third category: functions whose ignorability depends on the context in which they are used.
+
+Let's consider an ignorable function that still returns a value (such as `MutableList.add`). And let's wrap it in a trivial higher-order function:
+[source,kotlin]
+----
+fun <T> id(f: () -> T): T = f()
+
+@IgnorableReturnValue
+fun ignorableFun(): Boolean = true
+
+fun foo() {
+    id { ignorableFun() }
+}
+----
+
+Now the result of the `id` function depends on the context: whether the lambda returns an ignorable or a non-ignorable value. In this example, it would be nice not to report anything, even though `id` itself returns a non-`Unit` value.
+
+Going further, I'd like to point out that the challenge is not just propagating the ignorable attribute from `ignorableFun()` (that's actually a no-brainer). The real difficulty is that, in general, we don't know the implementation of a higher-order function such as `id`: what value it ultimately returns. Is the return value the value produced by the lambda, or is it some transformed completely new value?
+
+[source,kotlin]
+----
+// imaginary example
+fun <T> id(f: () -> T): T  { f(); return deserialize() as T } // now we should never ignore the result!
+----
+
+Sadly, we cannot infer this automatically, but we know our functions and just need a way to tell this to the compiler.
+
+==== How to tell the compiler about the same values
+
+To address higher-order functions, we need to tell the compiler which return value will be used as the result.
+
+In the team, we decided to use our contracts mechanism for this, and you can see what it looks like today  https://github.com/JetBrains/kotlin/commit/9d0c205659894342d44034261fb30c29fea7a951#diff-ad272eaa56cb9d7da2f9f86ce40bf9c83731d32e47af74d993114c6de6cac00eR116[here].
+
+In general, I expect that we might eventually add dedicated syntax for it as the knowledge that the value is the same one is useful for other features and optimizations such as copy vars and smart-casts.
+
+[source,kotlin]
+----
+// Imaginary syntax: prime (') means that it's exactly the same value
+
+// We return "this", so T in the receiver and return types are the same
+inline fun <T> T'.apply(block: T'.() -> Unit): T'
+
+
+// We return the result of the lambda, so these R are the same
+inline fun <T, R> T.let(block: (T) -> R'): R'
+----
+
+=== MURV and Scope functions
+
+Phew! We're done with the introduction.
+
+In Kotlin, we have some story around scope functions... They're definitely useful, but it's often difficult to choose the right one because several of them may seem equally applicable. We've tried to address this by providing guidance, and the https://kotlinlang.org/docs/scope-functions.html[docs] includes quite a nice summary. But, of course, without guidance from the compiler or tooling, documentation alone won't help so much.
+
+However! This is where Must-Use Return Values come in. The feature can finally provide compiler guidance here and
+address pitfalls described in this https://proandroiddev.com/11-approvals-green-tests-and-a-broken-prod-how-one-kotlin-keyword-blinded-our-ui-automation-34e2b1a3216c[blog post].
+
+Suppose you have a function whose return value must not be ignored, and you use it inside `apply`:
+[source,kotlin]
+----
+// with the feature enabled or in Kotlin 2.5
+expr.apply {
+    computeResult() // Warning: Unused return value of 'computeResult'
+}
+----
+
+Why is the return value considered unused? Because apply coerces the result of its lambda to `Unit`. Its signature is:
+`T'.apply(block: T'.() -> Unit): T'`
+
+So what should you do instead? Well, depends on your case! If you intentionally call `computeResult()` only for its side effects, you can make that explicit:
+[source,kotlin]
+----
+expr.apply {
+    // No warning, explicit acknowledge that we call the function for the side-effect
+    val _ = computeResult()
+}
+----
+
+On the other hand, if you actually intended to use the computed value, then `let` is the more appropriate scope function:
+[source,kotlin]
+----
+expr.let {
+    it.computeResult() // no warnings here, ignorability propagates higher to let
+}
+----
+
+Because `let` propagates the ignorability property of the returned value, the compiler will report a warning only if the result of the _entire_ `let` expression is ignored. This is exactly what we want: the value won't be lost inside the scope function, preventing the bug from silently propagating further.
+
+=== Summary
+
+That was a quick overview of the Must-Use Return Values feature. After enabling it, we found quite a few bugs in both the Kotlin compiler and our libraries, so I encourage you to give it a try.
+
+And if you're a library author, I especially encourage you to try the full mode, it will help the users of your library catch bugs as well!
+
