@@ -21,7 +21,7 @@ fun process(postalCodes: List<String>) {
 
 Which is great as it can save us from certain bugs, like the one above, where the expression is simply lost. You can read more about the feature here: https://github.com/Kotlin/KEEP/blob/main/proposals/KEEP-0412-unused-return-value-checker.md[KEEP-0412].
 
-=== MURV and pure functions
+== MURV and pure functions
 
 I like to think about this feature as a _pragmatic_ separation between functions with and without side-effects.
 
@@ -40,7 +40,7 @@ return values but these are often supplementary. For example:
 - Functions that "return" `Unit` obviously fall into this category. It's functions like `println("Kotlin")`
 - However, also functions like `MutableList.add(element): Boolean`: its primary purpose is to modify the list and return value is a supplementary thing.
 
-==== MURV and higher-order functions
+=== MURV and higher-order functions
 
 And, of course, in a language with higher-order functions, there's another aspect. Besides functions that are ignorable and not, there is effectively a third category: functions whose ignorability depends on the context in which they are used.
 
@@ -69,7 +69,7 @@ fun <T> id(f: () -> T): T  { f(); return deserialize() as T } // now we should n
 
 Sadly, we cannot infer this automatically, but we know our functions and just need a way to tell this to the compiler.
 
-==== How to tell the compiler about the same values
+=== How to tell the compiler about the same values
 
 To address higher-order functions, we need to tell the compiler which return value will be used as the result.
 
@@ -89,7 +89,7 @@ inline fun <T> T'.apply(block: T'.() -> Unit): T'
 inline fun <T, R> T.let(block: (T) -> R'): R'
 ----
 
-=== MURV and Scope functions
+== MURV and Scope functions
 
 Phew! We're done with the introduction.
 
@@ -129,7 +129,7 @@ expr.let {
 
 Because `let` propagates the ignorability property of the returned value, the compiler will report a warning only if the result of the _entire_ `let` expression is ignored. This is exactly what we want: the value won't be lost inside the scope function, preventing the bug from silently propagating further.
 
-=== Summary
+== Summary
 
 That was a quick overview of the Must-Use Return Values feature. After enabling it, we found quite a few bugs in both the Kotlin compiler and our libraries, so I encourage you to give it a try today:
 [source,kotlin]
