@@ -95,7 +95,7 @@ Phew! We're done with the introduction.
 
 In Kotlin, we have some story around scope functions... They're definitely useful, but it's often difficult to choose the right one because several of them may seem equally applicable. We've tried to address this by providing guidance, and the https://kotlinlang.org/docs/scope-functions.html[docs] includes quite a nice summary. But, of course, without guidance from the compiler or tooling, documentation alone won't help so much.
 
-However! This is where Must-Use Return Values come in. The feature can finally provide compiler guidance here and
+However! This is where Must-Use Return Values feature comes in. The feature can finally provide compiler guidance here and
 address pitfalls described in this https://proandroiddev.com/11-approvals-green-tests-and-a-broken-prod-how-one-kotlin-keyword-blinded-our-ui-automation-34e2b1a3216c[blog post].
 
 Suppose you have a function whose return value must not be ignored, and you use it inside `apply`:
@@ -107,10 +107,10 @@ expr.apply {
 }
 ----
 
-Why is the return value considered unused? Because apply coerces the result of its lambda to `Unit`. Its signature is:
+The compiler will emit a warning. Why? Because `apply` coerces the result of its lambda to `Unit`. Its signature is:
 `T'.apply(block: T'.() -> Unit): T'`
 
-So what should you do instead? Well, depends on your case! If you intentionally call `computeResult()` only for its side effects, you can make that explicit:
+So what should you do instead? Generally, it depends on your case. If you intentionally call `computeResult()` only for its side effects, you can make that explicit with `val _ =`:
 [source,kotlin]
 ----
 expr.apply {
@@ -131,7 +131,17 @@ Because `let` propagates the ignorability property of the returned value, the co
 
 === Summary
 
-That was a quick overview of the Must-Use Return Values feature. After enabling it, we found quite a few bugs in both the Kotlin compiler and our libraries, so I encourage you to give it a try.
+That was a quick overview of the Must-Use Return Values feature. After enabling it, we found quite a few bugs in both the Kotlin compiler and our libraries, so I encourage you to give it a try today:
+[source,kotlin]
+----
+// build.gradle(.kts)
+kotlin {
+    compilerOptions {
+        // or 'full' for the full mode
+        freeCompilerArgs.add("-Xreturn-value-checker=check")
+    }
+}
+----
 
 And if you're a library author, I especially encourage you to try the full mode, it will help the users of your library catch bugs as well!
 
